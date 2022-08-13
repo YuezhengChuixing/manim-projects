@@ -58,3 +58,10 @@ manim项目存储于`/projectfiles`目录下，文件夹名称有简单分类：
 视频[《Winograd算法》](https://www.bilibili.com/video/BV15S4y1B7kj "【人工智能芯片入门】卷积、对偶性、与Winograd算法")的代码。
 
 28是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了27的制作中。视频代码集中于27。
+
+
+- 30、31 (Video 4)
+
+视频[《定速抛体的包络线》](https://www.bilibili.com/video/BV19v4y1F7BC "【乐正垂星】定速抛体的包络线")的代码。
+
+31是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了30的制作中。视频代码集中于30。
