@@ -65,3 +65,11 @@ manim项目存储于`/projectfiles`目录下，文件夹名称有简单分类：
 视频[《定速抛体的包络线》](https://www.bilibili.com/video/BV19v4y1F7BC "【乐正垂星】定速抛体的包络线")的代码。
 
 31是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了30的制作中。视频代码集中于30。
+
+- 36、37 (Video 5)
+
+视频[《完美加密与现代密码学初探》](https://www.bilibili.com/video/BV1ce4y1q778/ "【乐正垂星】恺撒密码，完美加密，与现代密码学初探")的代码。
+
+37是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了36的制作中。视频代码集中于36。
+
+视频中所使用的svg图像来自[@BioCraft](https://space.bilibili.com/182765092 "BioCraft的b站个人空间")的创作，图片遵循CC BY-SA协议。
