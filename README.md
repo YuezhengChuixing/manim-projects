@@ -68,8 +68,16 @@ manim项目存储于`/projectfiles`目录下，文件夹名称有简单分类：
 
 - 36、37 (Video 5)
 
-视频[《完美加密与现代密码学初探》](https://www.bilibili.com/video/BV1ce4y1q778/ "【乐正垂星】恺撒密码，完美加密，与现代密码学初探")的代码。
+视频[《完美加密与现代密码学初探》](https://www.bilibili.com/video/BV1ce4y1q778 "【乐正垂星】恺撒密码，完美加密，与现代密码学初探")的代码。
 
 37是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了36的制作中。视频代码集中于36。
+
+视频中所使用的svg图像来自[@BioCraft](https://space.bilibili.com/182765092 "BioCraft的b站个人空间")的创作，图片遵循CC BY-SA协议。
+
+- 40、41 (Video 6)
+
+视频[《凸透镜的成像变换》](https://www.bilibili.com/video/BV1Ze411A7k6 "【乐正垂星】光学题，凸透镜，和射影几何")的代码。
+
+41是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了40的制作中。视频代码集中于40。
 
 视频中所使用的svg图像来自[@BioCraft](https://space.bilibili.com/182765092 "BioCraft的b站个人空间")的创作，图片遵循CC BY-SA协议。
