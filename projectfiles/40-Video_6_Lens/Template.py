@@ -1516,7 +1516,7 @@ class Chapter2_1(Scene):
 
         text_1 = r"\frac{1}{u}+\frac{1}{v}=\frac{1}{f}"
         text_2 = r"v=\frac{uf}{u-f}"
-        text_3 = r"v=-\frac{f^2}{u-f}+f"
+        text_3 = r"v=\frac{f^2}{u-f}+f"
         formula = MTex(r"&" + text_1 + r"\\\Rightarrow\ &" + text_2 + r"\\\Rightarrow\ &" + text_3, 
             isolate = [text_1, text_2, text_3, r"\Rightarrow"], 
             tex_to_color_map = {(r"u", r"\frac{1}{u}"): PURPLE, (r"v", r"\frac{1}{v}"): ORANGE, (r"f", r"f^2", r"\frac{1}{f}"): BLUE}
