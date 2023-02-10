@@ -81,3 +81,9 @@ manim项目存储于`/projectfiles`目录下，文件夹名称有简单分类：
 41是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了40的制作中。视频代码集中于40。
 
 视频中所使用的svg图像来自[@BioCraft](https://space.bilibili.com/182765092 "BioCraft的b站个人空间")的创作，图片遵循CC BY-SA协议。
+
+- 42、43 (Video 7)
+
+视频[《母函数》](https://www.bilibili.com/video/BV1QM411A73c "【乐正垂星】母函数是可以被理解的？！")的代码。
+
+43是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了42的制作中。视频代码集中于42。
