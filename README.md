@@ -90,6 +90,6 @@ manim项目存储于`/projectfiles`目录下，文件夹名称有简单分类：
 
 - 44、45 (Video 7)
 
-视频[《渐开线，与弧度方程》](https://www.bilibili.com/video/BV1rs4y1n7ZE "【乐正垂星】开！摆！——渐开线，摆线，与弧度方程")的代码。
+视频[《渐开线与弧度方程》](https://www.bilibili.com/video/BV1rs4y1n7ZE "【乐正垂星】开！摆！——渐开线，摆线，与弧度方程")的代码。
 
 45是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了44的制作中。视频代码集中于44。
