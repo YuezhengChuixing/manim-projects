@@ -93,3 +93,11 @@ manim项目存储于`/projectfiles`目录下，文件夹名称有简单分类：
 视频[《渐开线与弧度方程》](https://www.bilibili.com/video/BV1rs4y1n7ZE "【乐正垂星】开！摆！——渐开线，摆线，与弧度方程")的代码。
 
 45是**Exercise**，集中实现了一批图形对象与一批动画效果。这些实现被应用在了44的制作中。视频代码集中于44。
+
+___
+
+在45之后的文件，基于独立于manim库的`additional/additional.py`文件，使用时需将其手动添加至manimlib的`__init__.py`文件中。`additional.py`文件集中整理了一些常用的类。
+
+`000-Template`中，`old_Template.py`基于更改之前的代码，`Template.py`基于更改之后的代码。
+
+___
