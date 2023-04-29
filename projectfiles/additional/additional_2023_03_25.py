@@ -4,21 +4,19 @@ from functools import wraps
 import platform
 import time
 
-import numbers
 import numpy as np
 from tqdm import tqdm as ProgressDisplay
 
-from manimlib.mobject.mobject import Mobject
 from manimlib.mobject.types.vectorized_mobject import VMobject, VGroup
 from manimlib.mobject.svg.text_mobject import Text
 from manimlib.mobject.svg.mtex_mobject import MTex
-from manimlib.mobject.geometry import Line, Arrow, Circle, ArcBetweenPoints, Polygon, Rectangle, RegularPolygon
+from manimlib.mobject.geometry import Line, Circle, ArcBetweenPoints, Polygon, Rectangle, RegularPolygon
 from manimlib.scene.scene import Scene, EndSceneEarlyException
 from manimlib.animation.animation import Animation
 from manimlib.animation.movement import Homotopy
 from manimlib.animation.creation import Write
-from manimlib.animation.fading import FadeIn, FadeOut, FadeInFromPoint
-from manimlib.animation.transform import Transform, ReplacementTransform
+from manimlib.animation.fading import FadeOut
+from manimlib.animation.transform import ReplacementTransform
 
 from manimlib.logger import log
 
@@ -26,8 +24,6 @@ from manimlib.utils.color import interpolate_color
 from manimlib.utils.bezier import integer_interpolate, bezier
 from manimlib.utils.space_ops import get_norm
 from manimlib.utils.config_ops import digest_config
-from manimlib.utils.rate_functions import smooth
-from manimlib.utils.simple_functions import clip
 
 from manimlib.constants import ORIGIN, UP, DOWN, LEFT, RIGHT, UL, UR, DL, DR
 from manimlib.constants import PI, TAU
@@ -38,7 +34,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Callable, Iterable
-    import numpy.typing as npt
 
 
 # from manimlib import *
@@ -51,12 +46,12 @@ def unit(angle):
 def ellipse_unit(angle, a=1, b=1/2):
     return np.array([a*np.cos(angle), b*np.sin(angle), 0])
 
-def ratio_color(ratio: float, *colors, circulate: bool = True):
+def ratio_color(ratio: float, circulate: bool = True, *colors):
     
     if len(colors) == 0:
         colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
     if circulate:
-        colors = [*colors, colors[0]]
+        colors.append(colors[0])
 
     number_colors = len(colors) - 1
     index, interpolate = integer_interpolate(0, number_colors, ratio)
@@ -71,26 +66,6 @@ def double_bounce(t: float):
 
 def breath(t: float):
     return bezier([0, 0, 0, 1.5, 1.5, 1])(t)
-
-def smooth_boot(alpha: float, delta: float = 0):
-    beta = delta + alpha
-    alpha = clip(alpha, 0, 1)
-    beta = clip(beta, 0, 1-alpha)
-    delta = beta - alpha
-    ratio = 1/(1-alpha-delta/2)
-    def util(t: float):
-        if t < alpha:
-            return smooth(0.5*t/alpha)*ratio*alpha
-        elif t > 1-beta:
-            return 1 - smooth(0.5*(1-t)/beta)*ratio*beta
-        else:
-            return (t-alpha)*ratio + ratio*alpha/2
-    return util
-
-def less_smooth(t: float):
-    # Zero and first derivatives at t=0 and t=1.
-    # Equivalent to bezier([0, 0, 1, 1])
-    return (t**2) * (3 - 2 * t)
 
 OMEGA = unit(-PI/6)
 
@@ -248,7 +223,7 @@ class SpreadOut(Animation):
         points = starting_submobject.data["points"] - self.center
         dr = self.radius * alpha
 
-        to_delete = np.where(np.linalg.norm(points[1::3], axis = 1) > dr)
+        to_delete = np.where(np.linalg.norm(points[::3], axis = 1) > dr)
         deleted = np.delete(points.reshape((int(points.shape[0]/3), 3, 3)), to_delete, axis = 0) + self.center
         submobject.data["points"] = deleted.reshape(deleted.shape[0]*3, 3)
 
@@ -339,70 +314,12 @@ class SwallowIn(Homotopy):
 
         super().__init__(homotopy, mobject, **kwargs)
 
-class PullOpen(Transform):
-    def __init__(
-        self,
-        mobject: Mobject,
-        shift: np.ndarray = ORIGIN,
-        scale: float | npt.ArrayLike = 1,
-        along_axis: int = 0,
-        **kwargs
-    ):
-        self.shift_vect = shift
-        if isinstance(scale, numbers.Number):
-            self.scale_factor = np.ones(3)*scale
-        else:
-            self.scale_factor = scale
-        self.scale_factor[along_axis] = np.inf
-        super().__init__(mobject, **kwargs)
-    
-    def create_target(self) -> Mobject:
-        return self.mobject
-
-    def create_starting_mobject(self) -> Mobject:
-        start = super().create_starting_mobject()
-        start.scale(1.0 / self.scale_factor)
-        start.shift(-self.shift_vect)
-        return start
-    
-class Expand(Transform):
-    def __init__(
-        self,
-        mobject: Mobject,
-        **kwargs
-    ):
-        super().__init__(mobject, **kwargs)
-    
-    def create_target(self) -> Mobject:
-        return self.mobject
-
-    def create_starting_mobject(self) -> Mobject:
-        start = super().create_starting_mobject()
-        return start.scale(0)
-    
-class Grow(FadeInFromPoint):
-    def __init__(
-        self,
-        mobject: Arrow, 
-        **kwargs
-    ):
-        point = mobject.get_start()
-        super().__init__(mobject, point, **kwargs)
-
-
 #################################################################### 
 
 class FrameScene(Scene):
-    CONFIG = {
-        "for_pr": True
-    }
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.notices: list[Notice] = []
-        self.notice_index: int = 0
-        self.frames: int = 0
-        self.shade = Shade()
+    notices = []
+    notice_index = 0
+    frames = 0
 
     def show_notice(self, animation = Write):
         return animation(self.notices[0])
@@ -410,7 +327,10 @@ class FrameScene(Scene):
     def change_notice(self):
         i = self.notice_index
         self.notice_index += 1
-        return Transform(self.notices[0], self.notices[i+1])
+        return ReplacementTransform(self.notices[i], self.notices[i+1])
+    
+    def clear_notice(self, animation = FadeOut):
+        return animation(self.notices[-1])
 
     def run(self) -> None:
         self.virtual_animation_start_time: float = 0
@@ -419,34 +339,14 @@ class FrameScene(Scene):
 
         self.setup()
         try:
-            if self.for_pr:
-                self.emit_frame() #将视频导入到Premiere中会被删去头尾两帧
             self.construct()
             self.print_mark()
-            if self.for_pr:
-                self.emit_frame()
         except EndSceneEarlyException:
             pass
         self.tear_down()
 
     def print_mark(self):
         print(self.num_plays, self.time)
-
-    def fade_out(self, change_notice = False, end = False, **kwargs):
-        if not end:
-            self.add(self.shade, self.notice)
-        anims = [FadeIn(self.shade)]
-        if change_notice:
-            anims.append(self.change_notice())
-        self.play(*anims, **kwargs)
-        self.clear()
-        if not end:
-            self.add(self.notice)
-        return self
-    
-    def fade_in(self, *mobjects, **kwargs):
-        self.add(*mobjects, self.shade, self.notice).play(FadeOut(self.shade), **kwargs)
-        return self
 
     def update_frame(self, df: int = 0, ignore_skipping: bool = False) -> None:
         dt = df / self.camera.frame_rate
@@ -467,7 +367,7 @@ class FrameScene(Scene):
             if rt < vt:
                 self.update_frame(0)
 
-    def increment_time(self, df: int) -> None:
+    def increment_time(self, df: float) -> None:
         self.frames += df
         self.time = self.frames / self.camera.frame_rate
 
@@ -520,7 +420,6 @@ class FrameScene(Scene):
                 self.save_state()
 
             self.num_plays += 1
-            return self
         return wrapper
     
     @handle_play_like_call

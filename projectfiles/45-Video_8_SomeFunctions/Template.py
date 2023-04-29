@@ -585,6 +585,142 @@ class Test_6(Scene):
 
 #######################################################
 
+class Toy_2(FrameScene):
+    CONFIG = {
+        "for_pr": False,
+        "camera_config": {
+            "frame_config": {"frame_shape": (8.0, 8.0)}, 
+            }
+    }   
+
+    def construct(self):
+        radius = 0.8
+        circle_out = Circle(radius = 4*radius, stroke_color = WHITE, stroke_width = 3)
+        x_axis = Line(4*radius*LEFT, 4*radius*RIGHT)
+        y_axis = Line(4*radius*UP, 4*radius*DOWN)
+        function = lambda t: 4*radius*np.array([(np.cos(t))**3, (np.sin(t))**3, 0])
+        astroid = ParametricCurve(function, [0, TAU, TAU/100], color = GREEN, stroke_width = 6).save_state()
+        critical_angle = np.arccos(np.sqrt(2)/6) /2
+
+        alpha = ValueTracker(0.0)
+        circle_moving = Circle(radius = radius, stroke_color = BLUE, stroke_width = 3).shift(3*radius*RIGHT)
+        point_moving = Dot(color = BLUE, radius = 0.05).shift(4*radius*RIGHT)
+        line_moving = Line(4*radius*RIGHT, ORIGIN)
+        
+        self.play(ShowCreation(circle_out), PullOpen(x_axis), PullOpen(y_axis, along_axis = 1), ShowCreation(circle_moving), FadeIn(point_moving))
+
+        def astroid_updater(mob: ParametricCurve):
+            value = alpha.get_value()
+            curve = ParametricCurve(function, [0, value, TAU/100])
+            mob.set_points(curve.get_all_points())
+            if value > TAU:
+                mob.clear_updaters()
+        astroid.add_updater(astroid_updater)
+        def circle_updater(mob: Circle):
+            value = alpha.get_value()
+            mob.move_to(3*radius*unit(value))
+            ratio = clip((value-critical_angle)/PI*2-2.5, 0, 1)
+            mob.set_stroke(opacity = 1-ratio)
+        circle_moving.add_updater(circle_updater)
+        def point_updater(mob: Dot):
+            value = alpha.get_value()
+            mob.move_to(function(value))
+        point_moving.add_updater(point_updater)
+        def line_updater(mob: Line):
+            value = alpha.get_value()
+            unit_vector = 4*radius*unit(value)
+            mob.put_start_and_end_on(unit_vector[0]*RIGHT, unit_vector[1]*UP)
+            ratio = clip((value-critical_angle)/PI*2-1.5, 0, 1)
+            mob.set_stroke(opacity = ratio)
+        line_moving.add_updater(line_updater)
+        self.add(astroid, line_moving, point_moving).play(alpha.animate.set_value(TAU + critical_angle), rate_func = smooth_boot(1/6, 1/6), run_time = 4)
+        self.remove(circle_moving)
+
+        for mob in [astroid, circle_moving, point_moving, line_moving]:
+            mob.clear_updaters()
+
+        start_point = function(critical_angle)
+        self.play(line_moving.animate.scale(0, about_point = start_point), rate_func = rush_into)
+
+        function_1 = lambda t: radius*np.array([(3+np.sqrt(0.5))*np.cos(t)-2*(np.cos(t))**3, (3-np.sqrt(0.5))*np.sin(t)-2*(np.sin(t))**3, 0])
+        astroid_base = astroid.copy().set_stroke(color = GREY, width = 4)
+        semi_astroid = ParametricCurve(function, [critical_angle, PI-critical_angle, TAU/100], color = BLUE, stroke_width = 6).save_state()
+        line_involute = Line(start_point, start_point, color = [BLUE, GREEN], stroke_width = 6)
+        alpha.set_value(critical_angle)
+        def astroid_updater(mob: ParametricCurve):
+            value = alpha.get_value()
+            curve = ParametricCurve(lambda t: function(critical_angle + TAU - t), [0, critical_angle + TAU - value, PI/100])
+            mob.set_points(curve.get_all_points())
+        def involute_updater(mob: ParametricCurve):
+            value = alpha.get_value()
+            curve = ParametricCurve(function_1, [critical_angle, value, PI/100])
+            mob.set_points(curve.get_all_points())
+        def point_updater(mob: Dot):
+            value = alpha.get_value()
+            mob.move_to(function_1(value))
+        def line_updater(mob: Line):
+            value = alpha.get_value()
+            mob.put_start_and_end_on(function_1(value), function(value))
+        astroid.add_updater(astroid_updater)
+        semi_astroid.add_updater(involute_updater)
+        point_moving.add_updater(point_updater)
+        line_involute.add_updater(line_updater)
+        self.bring_to_back(astroid_base).add(line_involute, semi_astroid, point_moving).play(alpha.animate.set_value(critical_angle + TAU), rate_func = smooth_boot(1/6), run_time = 4.5)
+        
+        for mob in [astroid, semi_astroid, point_moving, line_involute]:
+            mob.clear_updaters()
+        axes_copy = VGroup(x_axis, y_axis).copy()
+        self.remove(astroid, line_involute).bring_to_back(axes_copy).play(semi_astroid.animate.scale(2), *[FadeOut(mob, scale = 2, shift = mob.get_center()) for mob in [axes_copy, circle_out, astroid_base, point_moving]])
+
+        radius = 2*radius
+        function_1 = lambda t: radius*np.array([(3+np.sqrt(0.5))*np.cos(t)-2*(np.cos(t))**3, (3-np.sqrt(0.5))*np.sin(t)-2*(np.sin(t))**3, 0])
+        line_left = x_axis.copy().save_state()
+        line_right = x_axis.copy().save_state()
+        points = [Dot(function_1(angle), color = YELLOW) for angle in [PI*3/8, PI*5/8, -PI*3/8, -PI*5/8]]
+        alpha = ValueTracker(0.0)
+        def line_updater(multiple: float):
+            def util(mob: Line):
+                value = alpha.get_value()
+                mob.restore().rotate(multiple*value).set_opacity(clip(value/PI, 0, 1))
+            return util
+        line_left.add_updater(line_updater(1))
+        line_right.add_updater(line_updater(-1))
+        self.add(line_left, line_right, semi_astroid).play(alpha.animate.set_value(PI - PI/8), rate_func = smooth_boot(1/6, -1/6), run_time = 1.4, frames = 42)
+        for mob in [line_left, line_right]:
+            mob.clear_updaters().set_color(YELLOW)
+        self.add(*points)
+        self.wait(0, 3)
+        for mob in [line_left, line_right, *points]:
+            mob.set_color(WHITE)
+
+        point = Dot(function_1(0), color = YELLOW)
+        line = Line(2*radius*unit(PI/8)*np.cos(PI/8), 2*radius*unit(-PI/8)*np.cos(PI/8), stroke_width = 6, color = YELLOW)
+        line_extra = Line(radius*unit(PI/8)*np.cos(PI/8)+radius*unit(-PI/8)*np.cos(PI/8), function_1(0), stroke_width = 3, color = YELLOW)
+        self.play(*[FadeOut(mob) for mob in [*points, x_axis, y_axis]], PullOpen(line, along_axis = 1), FadeIn(point))
+        alpha = ValueTracker(0)
+        def point_updater(mob: Dot):
+            value = alpha.get_value()
+            mob.move_to(function_1(value))
+        def line_updater(mob: Line):
+            value = alpha.get_value()
+            mob.put_start_and_end_on(2*radius*unit(PI/8)*np.cos(value-PI/8), 2*radius*unit(-PI/8)*np.cos(value+PI/8))
+        def line_extra_updater(mob: Line):
+            value = alpha.get_value()
+            mob.put_start_and_end_on(radius*unit(PI/8)*np.cos(value-PI/8)+radius*unit(-PI/8)*np.cos(value+PI/8), function_1(value))
+        point.add_updater(point_updater)
+        line.add_updater(line_updater)
+        line_extra.add_updater(line_extra_updater)
+        self.play(alpha.animate.set_value(-PI/8))
+        self.add(line_extra, line, point).play(alpha.animate.set_value(TAU), rate_func = smooth_boot(1/6, 0), run_time = 4)
+        for mob in [line_extra, line, point]:
+            mob.clear_updaters()
+        shade = Shade(height = 8, width = 8, fill_color = BLACK)
+        self.play(FadeIn(shade))
+        self.clear()
+
+
+#######################################################
+
 class Template(Scene):
     def construct(self):
 
