@@ -8,9 +8,8 @@ import numbers
 import numpy as np
 from tqdm import tqdm as ProgressDisplay
 
-from manimlib.mobject.mobject import Mobject, Group
+from manimlib.mobject.mobject import Mobject
 from manimlib.mobject.types.vectorized_mobject import VMobject, VGroup
-from manimlib.mobject.types.image_mobject import ImageMobject
 from manimlib.mobject.svg.text_mobject import Text
 from manimlib.mobject.svg.mtex_mobject import MTex
 from manimlib.mobject.geometry import Line, Arrow, Circle, ArcBetweenPoints, Polygon, Rectangle, RegularPolygon
@@ -96,7 +95,6 @@ def less_smooth(t: float):
 OMEGA = unit(-PI/6)
 
 BACK = "#333333"
-LIME = "#BFFF00"
 
 DEFAULT_WAIT_TIME = 1
 
@@ -123,33 +121,6 @@ class Shade(Rectangle):
         "fill_color": BACK, 
         "stroke_width": 0
     }
-
-class Title(Text):
-    def __init__(self, text):
-        super().__init__(text, font = "simsun", color = YELLOW)
-        self.next_to(3*UP, UP)
-
-class TitleLine(Line):
-    def __init__(self):
-        super().__init__(3*UP+6*LEFT, 3*UP+6*RIGHT)
-
-class LabelPicture(Group):
-    CONFIG = {
-        "picture_config": {"height": 4},
-        "text_config": {"font": "simsun"},
-        "text_scale": 0.4,
-    }
-    def __init__(self, picture, text, **kwargs):
-        digest_config(self, kwargs)
-        image = ImageMobject(picture, **self.picture_config)
-        text = Text(text, **self.text_config).scale(self.text_scale).next_to(image, DOWN)
-        super().__init__(image, text)
-
-class BVCover(Group):
-    def __init__(self, picture, text, **kwargs):
-        image = ImageMobject(picture, height = 2)
-        text = Text(text, font = "Times New Roman").scale(0.5).next_to(image, UP, buff = 0.1)
-        super().__init__(image, text)
 
 class SnowFlake(VGroup):
     def __init__(self):
@@ -418,6 +389,7 @@ class Grow(FadeInFromPoint):
         point = mobject.get_start()
         super().__init__(mobject, point, **kwargs)
 
+
 #################################################################### 
 
 class FrameScene(Scene):
@@ -431,7 +403,6 @@ class FrameScene(Scene):
         self.notice_index: int = 0
         self.frames: int = 0
         self.shade = Shade()
-        self.test_line = Line(3*DOWN+6*LEFT, 3*DOWN+6*RIGHT)
 
     def show_notice(self, animation = Write):
         return animation(self.notices[0])
@@ -461,20 +432,20 @@ class FrameScene(Scene):
     def print_mark(self):
         print(self.num_plays, self.time)
 
-    def fade_out(self, change_notice = False, end = False, excepts = [], **kwargs):
+    def fade_out(self, change_notice = False, end = False, **kwargs):
         if not end:
-            self.add(self.shade, *excepts, self.notice)
+            self.add(self.shade, self.notice)
         anims = [FadeIn(self.shade)]
         if change_notice:
             anims.append(self.change_notice())
         self.play(*anims, **kwargs)
         self.clear()
         if not end:
-            self.add(*excepts, self.notice)
+            self.add(self.notice)
         return self
     
-    def fade_in(self, *mobjects, excepts = [], **kwargs):
-        self.add(*mobjects, self.shade, *excepts, self.notice).play(FadeOut(self.shade), **kwargs)
+    def fade_in(self, *mobjects, **kwargs):
+        self.add(*mobjects, self.shade, self.notice).play(FadeOut(self.shade), **kwargs)
         return self
 
     def update_frame(self, df: int = 0, ignore_skipping: bool = False) -> None:
