@@ -14,6 +14,8 @@ from manimlib.mobject.types.image_mobject import ImageMobject
 from manimlib.mobject.svg.text_mobject import Text
 from manimlib.mobject.svg.mtex_mobject import MTex
 from manimlib.mobject.geometry import Line, Arrow, Circle, ArcBetweenPoints, Polygon, Rectangle, RegularPolygon
+from manimlib.mobject.shape_matchers import SurroundingRectangle
+from manimlib.camera.camera import Camera
 from manimlib.scene.scene import Scene, EndSceneEarlyException
 from manimlib.animation.animation import Animation
 from manimlib.animation.movement import Homotopy
@@ -33,7 +35,7 @@ from manimlib.utils.simple_functions import clip
 from manimlib.constants import ORIGIN, UP, DOWN, LEFT, RIGHT, UL, UR, DL, DR
 from manimlib.constants import PI, TAU
 from manimlib.constants import FRAME_HEIGHT, FRAME_WIDTH
-from manimlib.constants import RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE, BLUE_E
+from manimlib.constants import RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, WHITE, BLACK, BLUE_E
 
 from typing import TYPE_CHECKING
 
@@ -72,6 +74,10 @@ def double_bounce(t: float):
 
 def breath(t: float):
     return bezier([0, 0, 0, 1.5, 1.5, 1])(t)
+
+def double_there_and_back(t: float):
+    new_t = 1-abs(1-abs(4*t-2))
+    return smooth(new_t)
 
 def smooth_boot(alpha: float, delta: float = 0):
     beta = delta + alpha
@@ -113,7 +119,27 @@ class Notice(VGroup):
             row2.scale(1.25)
         row2.next_to(row1, DOWN)
         super().__init__(row1, row2, **kwargs)
-        self.scale(0.5).shift(np.array([5.8,2.9,0]))
+        self.scale(0.5).shift(np.array([5.8,2.9,0])).set_stroke(width = 8, color = BACK, background = True)
+
+class FixedNotice(VMobject):
+    def __init__(self, m_text1, m_text2):
+        super().__init__(stroke_width = 0, fill_opacity = 1, is_fixed_in_frame = True)
+        notice = Notice(m_text1, m_text2)
+        self.set_points(notice.get_all_points())
+
+class FixedText(VMobject):
+    def __init__(self, text, **kwargs):
+        super().__init__(stroke_width = 0, fill_opacity = 1, is_fixed_in_frame = True)
+        notice = Text(text, **kwargs)
+        for mob in notice.submobjects:
+            new_submob = VMobject(stroke_width = 0, fill_opacity = 1, is_fixed_in_frame = True).set_points(mob.get_all_points())
+            self.add(new_submob)
+
+class FixedTex(VMobject):
+    def __init__(self, text, **kwargs):
+        super().__init__(stroke_width = 0, fill_opacity = 1, is_fixed_in_frame = True)
+        notice = MTex(text, **kwargs)
+        self.set_points(notice.get_all_points())
 
 class Shade(Rectangle):
     CONFIG = {
@@ -128,6 +154,16 @@ class Title(Text):
     def __init__(self, text):
         super().__init__(text, font = "simsun", color = YELLOW)
         self.next_to(3*UP, UP)
+
+class Simsun(Text):
+    CONFIG = {
+        "font": "simsun"
+    }
+
+class Simhei(Text):
+    CONFIG = {
+        "font": "simhei"
+    }
 
 class TitleLine(Line):
     def __init__(self):
@@ -262,7 +298,7 @@ class Testboard(VGroup):
 
         super().__init__(mtex_1, mtex_2, mtex_3, line_1, mtex_4, mtex_5, mtex_6, mtex_7, line_2, mtex_8, mtex_9)
 
-################################################################### #
+###################################################################
 
 class SpreadOut(Animation):
     # 本部分代码来自一碗星空汤（b站ID：一碗星空咕）
@@ -418,11 +454,44 @@ class Grow(FadeInFromPoint):
         point = mobject.get_start()
         super().__init__(mobject, point, **kwargs)
 
+class IndicateAround(FadeIn):
+    CONFIG = {
+        "run_time": 2, 
+        "rate_func": double_there_and_back, 
+        "remover": True
+    }
+    def __init__(
+        self,
+        mobject: Mobject,
+        **kwargs
+    ):
+        super().__init__(SurroundingRectangle(mobject))
+
 #################################################################### 
+
+class AACamera(Camera):
+    def capture(self, *mobjects: Mobject, **kwargs) -> None:
+        for mobject in mobjects:
+            self.anti_alias_width = getattr(mobject, "anti_alias_width", self.anti_alias_width)
+            self.refresh_perspective_uniforms()
+            for render_group in self.get_render_group_list(mobject):
+                self.render(render_group)
+
+class CoverScene(Scene):
+    CONFIG = {
+        "camera_config": {
+            "frame_config": {"frame_shape": (16, 10)}, 
+            },
+        "camera_class": AACamera
+    }
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.domain: Rectangle = Rectangle(height = 9, width = 40/3, fill_color = BLACK, fill_opacity = 1, stroke_width = 0)
+        self.add(self.domain)
 
 class FrameScene(Scene):
     CONFIG = {
-        "for_pr": True
+        "for_pr": True,
     }
 
     def __init__(self, **kwargs):
@@ -436,10 +505,10 @@ class FrameScene(Scene):
     def show_notice(self, animation = Write):
         return animation(self.notices[0])
 
-    def change_notice(self):
+    def change_notice(self, **kwargs):
         i = self.notice_index
         self.notice_index += 1
-        return Transform(self.notices[0], self.notices[i+1])
+        return Transform(self.notices[0], self.notices[i+1], **kwargs)
 
     def run(self) -> None:
         self.virtual_animation_start_time: float = 0
@@ -473,8 +542,11 @@ class FrameScene(Scene):
             self.add(*excepts, self.notice)
         return self
     
-    def fade_in(self, *mobjects, excepts = [], **kwargs):
-        self.add(*mobjects, self.shade, *excepts, self.notice).play(FadeOut(self.shade), **kwargs)
+    def fade_in(self, *mobjects, change_notice = False, excepts = [], **kwargs):
+        anims = [FadeOut(self.shade)]
+        if change_notice:
+            anims.append(self.change_notice())
+        self.add(*mobjects, self.shade, *excepts, self.notice).play(*anims, **kwargs)
         return self
 
     def update_frame(self, df: int = 0, ignore_skipping: bool = False) -> None:
